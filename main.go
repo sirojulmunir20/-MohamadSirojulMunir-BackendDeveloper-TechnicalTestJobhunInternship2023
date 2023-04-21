@@ -4,31 +4,37 @@ import (
 	"fmt"
 	"jobhun-api/config"
 	"jobhun-api/helper"
-	"log"
+	"jobhun-api/router"
+	"jobhun-api/repository"
+	"jobhun-api/service"
+	"jobhun-api/controller"
+	
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	_"github.com/julienschmidt/httprouter"
 )
 
 func main() {
 	fmt.Println("Start server")
 	
-	db, err := config.NewDB()
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-	
+	db := config.DatabaseConnection()
 	defer db.Close()
 	
-	routes := httprouter.New()
+	// repository
+	studentRepository := repository.NewStudentRepository(db)
 
-	routes.GET("/", func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		fmt.Fprint(w, "Welcome Home")
-	})
+	// service
+	studentService := service.NewStudentServiceImpl(studentRepository)
+
+	// controller
+	bookController := controller.NewStudentController(studentService)
+
+	// router
+	routes := router.NewRouter(bookController)
 
 	server := http.Server{Addr: "localhost:8888", Handler: routes}
 
-	err = server.ListenAndServe()
+	err := server.ListenAndServe()
 	helper.PanicIfError(err)
 	
 }
